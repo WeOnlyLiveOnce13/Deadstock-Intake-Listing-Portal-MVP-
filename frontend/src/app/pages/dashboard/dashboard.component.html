@@ -1,0 +1,169 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-bold text-gray-900">PCRD Deadstock Portal</h1>
+      <div class="flex items-center gap-4">
+        <span class="text-sm text-gray-600">{{ auth.user()?.email }}</span>
+        <button (click)="auth.logout()" class="btn btn-ghost btn-sm">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="card p-4">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-yellow-100 rounded-lg text-yellow-600">
+            <i class="fa-solid fa-box fa-lg"></i>
+          </div>
+          <div>
+            <p class="text-2xl font-bold">{{ inventory.stats().draft }}</p>
+            <p class="text-sm text-gray-600">Draft</p>
+          </div>
+        </div>
+      </div>
+      <div class="card p-4">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-green-100 rounded-lg text-green-600">
+            <i class="fa-solid fa-tag fa-lg"></i>
+          </div>
+          <div>
+            <p class="text-2xl font-bold">{{ inventory.stats().priced }}</p>
+            <p class="text-sm text-gray-600">Priced</p>
+          </div>
+        </div>
+      </div>
+      <div class="card p-4">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-blue-100 rounded-lg text-blue-600">
+            <i class="fa-solid fa-circle-check fa-lg"></i>
+          </div>
+          <div>
+            <p class="text-2xl font-bold">{{ inventory.stats().listed }}</p>
+            <p class="text-sm text-gray-600">Listed</p>
+          </div>
+        </div>
+      </div>
+      <div class="card p-4">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-purple-100 rounded-lg text-purple-600">
+            <i class="fa-solid fa-coins fa-lg"></i>
+          </div>
+          <div>
+            <p class="text-2xl font-bold">R{{ inventory.stats().totalValue | number }}</p>
+            <p class="text-sm text-gray-600">Total Value</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card p-4">
+      <div class="flex flex-wrap gap-3">
+        <button (click)="showAddModal = true" class="btn btn-primary">
+          <i class="fa-solid fa-plus"></i> Add Item
+        </button>
+        <button (click)="showUploadModal = true" class="btn btn-secondary">
+          <i class="fa-solid fa-upload"></i> Upload CSV
+        </button>
+        <button
+          (click)="priceAllDraft()"
+          class="btn btn-success"
+          [disabled]="inventory.stats().draft === 0"
+        >
+          <i class="fa-solid fa-dollar-sign"></i> Price All Draft
+        </button>
+        <button
+          (click)="listAllPriced()"
+          class="btn btn-primary"
+          [disabled]="inventory.stats().priced === 0"
+        >
+          <i class="fa-solid fa-rocket"></i> List All Priced
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card p-4">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-sm text-gray-600 mr-2">Filter:</span>
+        <button
+          (click)="clearFilters()"
+          class="btn btn-sm"
+          [class.btn-primary]="filterStatuses.length === 0"
+          [class.btn-ghost]="filterStatuses.length > 0"
+        >
+          All
+        </button>
+        <button
+          (click)="toggleFilter('DRAFT')"
+          class="btn btn-sm"
+          [class.btn-primary]="isFilterActive('DRAFT')"
+          [class.btn-ghost]="!isFilterActive('DRAFT')"
+        >
+          <i class="fa-solid fa-box"></i> Draft
+        </button>
+        <button
+          (click)="toggleFilter('PRICED')"
+          class="btn btn-sm"
+          [class.btn-primary]="isFilterActive('PRICED')"
+          [class.btn-ghost]="!isFilterActive('PRICED')"
+        >
+          <i class="fa-solid fa-tag"></i> Priced
+        </button>
+        <button
+          (click)="toggleFilter('LISTED')"
+          class="btn btn-sm"
+          [class.btn-primary]="isFilterActive('LISTED')"
+          [class.btn-ghost]="!isFilterActive('LISTED')"
+        >
+          <i class="fa-solid fa-circle-check"></i> Listed
+        </button>
+        @if (filterStatuses.length > 0) {
+          <span class="text-xs text-gray-500 ml-2">
+            ({{ filterStatuses.length }} selected)
+          </span>
+        }
+      </div>
+    </div>
+
+    <!-- Table -->
+    @if (inventory.loading()) {
+      <div class="card p-12 text-center">
+        <i class="fa-solid fa-spinner fa-spin fa-3x text-gray-400"></i>
+        <p class="text-gray-500 mt-2">Loading items...</p>
+      </div>
+    } @else {
+      <app-inventory-table
+        (onSetPrice)="openSetPrice($event)"
+        (onRefresh)="loadItems()"
+      />
+    }
+  </main>
+</div>
+
+@if (showAddModal) {
+  <app-add-item-modal
+    (close)="showAddModal = false"
+    (saved)="showAddModal = false; loadItems()"
+  />
+}
+
+@if (showUploadModal) {
+  <app-upload-modal
+    (close)="showUploadModal = false"
+    (uploaded)="showUploadModal = false; loadItems()"
+  />
+}
+
+@if (priceItem) {
+  <app-set-price-modal
+    [item]="priceItem"
+    (close)="priceItem = null"
+    (saved)="priceItem = null"
+  />
+}

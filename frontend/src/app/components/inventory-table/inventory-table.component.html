@@ -1,0 +1,149 @@
+<div class="card overflow-hidden">
+  @if (inventory.items().length === 0) {
+    <div class="p-12 text-center">
+      <p class="text-gray-500">No items found. Add items or upload a CSV.</p>
+    </div>
+  } @else {
+    <!-- Bulk Actions -->
+    @if (inventory.selectedIds().size > 0) {
+      <div class="bg-blue-50 border-b border-blue-100 px-4 py-3 flex items-center gap-4">
+        <span class="text-sm font-medium text-blue-800">
+          {{ inventory.selectedIds().size }} selected
+        </span>
+        <button (click)="priceSelected()" class="btn btn-sm btn-success">
+          <i class="fa-solid fa-dollar-sign"></i> Price Selected
+        </button>
+        <button (click)="listSelected()" class="btn btn-sm btn-primary">
+          <i class="fa-solid fa-rocket"></i> List Selected
+        </button>
+        <button (click)="confirmDeleteSelected()" class="btn btn-sm btn-danger">
+          <i class="fa-solid fa-trash"></i> Delete
+        </button>
+        <button (click)="inventory.clearSelection()" class="btn btn-sm btn-ghost ml-auto">
+          Clear
+        </button>
+      </div>
+    }
+
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th class="w-12 px-4 py-3">
+              <input
+                type="checkbox"
+                [checked]="allSelected()"
+                (change)="toggleAll()"
+                class="rounded"
+              />
+            </th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Condition</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Original</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Resale</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Qty</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          @for (item of inventory.items(); track item.id) {
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3">
+                <input
+                  type="checkbox"
+                  [checked]="inventory.selectedIds().has(item.id)"
+                  (change)="inventory.toggleSelection(item.id)"
+                  class="rounded"
+                />
+              </td>
+              <td class="px-4 py-3 text-sm font-mono text-gray-600">{{ item.sku }}</td>
+              <td class="px-4 py-3">
+                <div class="text-sm font-medium text-gray-900">{{ item.title }}</div>
+                @if (item.brand) {
+                  <div class="text-xs text-gray-500">{{ item.brand }}</div>
+                }
+              </td>
+              <td class="px-4 py-3 text-sm text-gray-600">{{ item.category }}</td>
+              <td class="px-4 py-3 text-sm text-gray-600">{{ formatCondition(item.condition) }}</td>
+              <td class="px-4 py-3 text-sm text-right text-gray-600">
+                {{ item.currency }} {{ item.originalPrice | number }}
+              </td>
+              <td class="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                {{ item.currency }} {{ item.resalePrice | number }}
+              </td>
+              <td class="px-4 py-3 text-sm text-center text-gray-600">{{ item.quantity }}</td>
+              <td class="px-4 py-3 text-center">
+                <span [class]="getStatusClass(item.status)">
+                  {{ item.status }}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex items-center justify-end gap-1">
+                  @if (item.status === 'DRAFT') {
+                    <button
+                      (click)="autoPrice(item)"
+                      class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded"
+                      title="Auto-price"
+                    >
+                      <i class="fa-solid fa-dollar-sign"></i>
+                    </button>
+                  }
+                  @if (item.status !== 'LISTED') {
+                    <button
+                      (click)="onSetPrice.emit(item)"
+                      class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                      title="Set price"
+                    >
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                  }
+                  @if (item.status === 'PRICED') {
+                    <button
+                      (click)="listItem(item)"
+                      class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                      title="List item"
+                    >
+                      <i class="fa-solid fa-rocket"></i>
+                    </button>
+                  }
+                  <button
+                    (click)="confirmDeleteItem(item)"
+                    class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                    title="Delete"
+                  >
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (deleteTarget()) {
+  <app-confirm-modal
+    title="Delete Item"
+    [message]="getDeleteMessage()"
+    confirmText="Delete"
+    type="danger"
+    (confirm)="deleteItem()"
+    (cancel)="cancelDelete()">
+  </app-confirm-modal>
+}
+
+@if (deleteBulkCount() > 0) {
+  <app-confirm-modal
+    title="Delete Multiple Items"
+    [message]="getBulkDeleteMessage()"
+    confirmText="Delete All"
+    type="danger"
+    (confirm)="deleteSelected()"
+    (cancel)="cancelDelete()">
+  </app-confirm-modal>
+}

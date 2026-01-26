@@ -1,0 +1,112 @@
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" (click)="close.emit()">
+  <div class="card w-full max-w-lg mx-4" (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between p-4 border-b border-gray-200">
+      <h2 class="text-lg font-semibold">Add New Item</h2>
+      <button (click)="close.emit()" class="p-1 hover:bg-gray-100 rounded text-xl">
+        ✕
+      </button>
+    </div>
+
+    @if (error()) {
+      <div class="mx-4 mt-4 bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm">
+        {{ error() }}
+      </div>
+    }
+
+    <form (ngSubmit)="submit()" class="p-4 space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Merchant ID *</label>
+          <input [(ngModel)]="form.merchant_id" name="merchant_id" class="input" required maxlength="10" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">SKU *</label>
+          <input [(ngModel)]="form.sku" name="sku" class="input" required maxlength="10" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+        <input [(ngModel)]="form.title" name="title" class="input" required maxlength="30" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+          <input [(ngModel)]="form.brand" name="brand" class="input" maxlength="20" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+          <select [(ngModel)]="form.category" name="category" class="input" required>
+            <option value="">Select...</option>
+            @for (cat of categories; track cat) {
+              <option [value]="cat">{{ cat }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Condition *</label>
+          <select [(ngModel)]="form.condition" name="condition" class="input" required>
+            <option value="">Select...</option>
+            @for (cond of conditions; track cond.value) {
+              <option [value]="cond.value">{{ cond.label }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
+          <input
+            type="number"
+            [(ngModel)]="form.quantity"
+            name="quantity"
+            class="input"
+            required
+            min="1"
+            max="200"
+          />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Currency *</label>
+          <select [(ngModel)]="form.currency" name="currency" class="input" required>
+            @for (cur of currencies; track cur) {
+              <option [value]="cur">{{ cur }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Original Price *</label>
+          <input
+            type="number"
+            [(ngModel)]="form.original_price"
+            name="original_price"
+            class="input"
+            placeholder="0"
+            required
+            min="1"
+            max="5000"
+          />
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+        <button type="button" (click)="close.emit()" class="btn btn-secondary">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">
+          @if (loading()) {
+            <span class="animate-spin inline-block mr-1">⏳</span>
+            Adding...
+          } @else {
+            ⊕ Add Item
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

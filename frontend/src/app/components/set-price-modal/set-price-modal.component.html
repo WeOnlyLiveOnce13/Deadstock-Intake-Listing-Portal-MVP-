@@ -1,0 +1,68 @@
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" (click)="close.emit()">
+  <div class="card w-full max-w-sm mx-4" (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between p-4 border-b border-gray-200">
+      <h2 class="text-lg font-semibold">
+        <i class="fa-solid fa-dollar-sign text-green-600 mr-2"></i> Set Price
+      </h2>
+      <button (click)="close.emit()" class="p-1 hover:bg-gray-100 rounded">
+        <i class="fa-solid fa-xmark text-gray-500"></i>
+      </button>
+    </div>
+
+    <div class="p-4 space-y-4">
+      <div>
+        <p class="font-medium text-gray-900">{{ item.title }}</p>
+        <p class="text-sm text-gray-600">Original: {{ item.currency }} {{ item.originalPrice | number }}</p>
+        <p class="text-sm text-gray-600">Auto-calculated: {{ item.currency }} {{ item.resalePrice | number }}</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Custom Resale Price</label>
+        <div class="flex items-center gap-2">
+          <span class="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 shrink-0">
+            {{ item.currency }}
+          </span>
+          <input
+            type="number"
+            [(ngModel)]="customPrice"
+            class="input flex-1 min-w-0"
+            min="1"
+            [max]="item.originalPrice"
+          />
+        </div>
+      </div>
+
+      @if (customPrice > 0) {
+        <div class="bg-gray-50 rounded-lg p-3 text-sm">
+          <p class="text-gray-600">
+            <i class="fa-solid fa-chart-line mr-1"></i>
+            Margin: {{ getMargin() }}%
+            ({{ item.currency }} {{ customPrice - getCost() | number }} profit)
+          </p>
+        </div>
+      }
+
+      @if (error()) {
+        <div class="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          {{ error() }}
+        </div>
+      }
+
+      <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+        <button (click)="close.emit()" class="btn btn-secondary">Cancel</button>
+        <button
+          (click)="submit()"
+          class="btn btn-primary"
+          [disabled]="loading() || customPrice <= 0"
+        >
+          @if (loading()) {
+            <i class="fa-solid fa-spinner fa-spin"></i> Saving...
+          } @else {
+            <i class="fa-solid fa-dollar-sign"></i> Set Price
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

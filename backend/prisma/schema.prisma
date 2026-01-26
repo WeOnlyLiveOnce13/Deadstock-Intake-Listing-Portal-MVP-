@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============================================
+// USER - Authentication & account management
+// ============================================
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String // bcrypt hash
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  inventory InventoryItem[]
+}
+
+// ============================================
+// INVENTORY ITEM - Core business entity
+// ============================================
+model InventoryItem {
+  id String @id @default(uuid())
+
+  // Business fields (from assessment)
+  merchantId    String // External merchant reference
+  sku           String // Stock keeping unit
+  title         String
+  brand         String? // Optional
+  category      String
+  condition     ItemCondition
+  originalPrice Float // Must be > 0
+  currency      String        @default("ZAR")
+  quantity      Int           @default(1) // Must be >= 1
+
+  // Pricing & status
+  resalePrice Float? // Null until priced
+  status      ItemStatus @default(DRAFT)
+
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Constraints: unique (userId, merchantId, sku)
+  @@unique([userId, merchantId, sku])
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+}
+
+// ============================================
+// ENUMS
+// ============================================
+enum ItemCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+}
+
+enum ItemStatus {
+  DRAFT // Just created, not priced
+  PRICED // Has resale price
+  LISTED // Published to marketplace
+}
