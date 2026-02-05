@@ -1,0 +1,36 @@
+<!-- Notification Container - Fixed position at top right -->
+<div class="fixed top-4 right-4 z-50 flex flex-col gap-3 max-w-sm">
+  
+  @for (notification of notificationService.notifications(); track notification.id) {
+    <!-- Individual Notification Toast -->
+    <div
+      class="flex items-start gap-3 p-4 rounded-lg shadow-lg border-l-4 bg-white animate-slide-in"
+      [class]="getBorderClass(notification.type)"
+      role="alert"
+    >
+      <!-- Icon -->
+      <div
+        class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white"
+        [class]="getBgClass(notification.type)"
+      >
+        <i class="fa-solid" [class]="getIcon(notification.type)"></i>
+      </div>
+
+      <!-- Content -->
+      <div class="flex-1 min-w-0">
+        <p class="font-semibold text-gray-900">{{ notification.title }}</p>
+        <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
+      </div>
+
+      <!-- Dismiss Button -->
+      <button
+        (click)="dismiss(notification.id)"
+        class="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+        aria-label="Dismiss notification"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  }
+
+</div>

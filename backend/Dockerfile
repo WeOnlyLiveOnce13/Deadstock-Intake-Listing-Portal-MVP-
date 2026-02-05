@@ -15,14 +15,10 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Create data directory for SQLite
-RUN mkdir -p /app/data
-
 # Build
 RUN npm run build
 
 ENV NODE_ENV=production
-ENV DATABASE_URL="file:./data/dev.db"
 
 EXPOSE 3000
 

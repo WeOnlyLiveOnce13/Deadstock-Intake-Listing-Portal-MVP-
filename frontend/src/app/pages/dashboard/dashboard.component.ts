@@ -7,6 +7,7 @@ import { AddItemModalComponent } from '../../components/add-item-modal/add-item-
 import { UploadModalComponent } from '../../components/upload-modal/upload-modal.component';
 import { SetPriceModalComponent } from '../../components/set-price-modal/set-price-modal.component';
 import type { InventoryItem } from '../../models';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
@@ -28,7 +29,8 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     public auth: AuthService,
-    public inventory: InventoryService
+    public inventory: InventoryService,
+  private router: Router
   ) {}
 
   ngOnInit() {
@@ -84,5 +86,13 @@ export class DashboardComponent implements OnInit {
         this.loadItems();
       });
     }
+  }
+
+  goToProducts() {
+    this.router.navigate(['/products']);
+  }
+
+  goToOrders() {
+    this.router.navigate(['/orders']);
   }
 }

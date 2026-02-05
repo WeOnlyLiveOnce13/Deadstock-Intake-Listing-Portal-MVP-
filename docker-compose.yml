@@ -1,25 +1,60 @@
 services:
+  # ==========================================================================
+  # PostgreSQL Database
+  # ==========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: muna-postgres
+    restart: unless-stopped
+    environment:
+      # Local credentials. Make sure to use Railway when I deploy
+      POSTGRES_USER: muna_user
+      POSTGRES_PASSWORD: muna_password_local_dev
+      POSTGRES_DB: muna_africa
+    ports:
+      - "5432:5432"
+    volumes:
+      # Named volume persists data even if container is removed
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # Ensures PostgreSQL is ready before backend starts
+      test: ["CMD-SHELL", "pg_isready -U muna_user -d muna_africa"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  # ==========================================================================
+  # Backend (NestJS API)
+  # ==========================================================================
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: muna-backend
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=file:./data/dev.db
-      - JWT_SECRET=your-secret-key-change-in-production
-      - CORS_ORIGINS=http://localhost:4200,http://localhost:8080
-    volumes:
-      - backend-data:/app/data
+    # postgresql://USER:PASSWORD@HOST:PORT/DATABASE
+      DATABASE_URL: postgresql://muna_user:muna_password_local_dev@postgres:5432/muna_africa
+      JWT_SECRET: your-secret-key-change-in-production
+      CORS_ORIGINS: http://localhost:4200,http://localhost:8080
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        # Wait for PostgreSQL health check to pass before starting
+        condition: service_healthy
 
+  # ==========================================================================
+  # Frontend (Angular)
+  # ==========================================================================
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: muna-frontend
     ports:
       - "4200:80"
     depends_on:
       - backend
 
 volumes:
-  backend-data:
+  postgres-data:

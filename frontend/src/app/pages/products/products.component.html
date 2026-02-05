@@ -1,0 +1,178 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <button (click)="goToDashboard()" class="btn btn-ghost btn-sm">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <h1 class="text-xl font-bold text-gray-900">Product Portal</h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <button (click)="goToOrders()" class="btn btn-secondary btn-sm">
+          <i class="fa-solid fa-receipt"></i> My Orders
+        </button>
+        <span class="text-sm text-gray-600">{{ auth.user()?.email }}</span>
+        <button (click)="auth.logout()" class="btn btn-ghost btn-sm">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <!-- Stats Bar -->
+    <div class="card p-4">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-blue-100 rounded-lg text-blue-600">
+            <i class="fa-solid fa-shop fa-lg"></i>
+          </div>
+          <div>
+            <p class="text-2xl font-bold">{{ productService.productCount() }}</p>
+            <p class="text-sm text-gray-600">Available Products</p>
+          </div>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Category:</span>
+          <select
+            [value]="selectedCategory"
+            (change)="onCategoryChange($any($event.target).value)"
+            class="select select-bordered select-sm"
+          >
+            <option value="">All Categories</option>
+            @for (category of productService.categories(); track category) {
+              <option [value]="category">{{ category }}</option>
+            }
+          </select>
+          @if (selectedCategory) {
+            <button (click)="clearFilter()" class="btn btn-ghost btn-sm">
+              <i class="fa-solid fa-xmark"></i> Clear
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    @if (productService.loading()) {
+      <div class="flex justify-center py-12">
+        <div class="flex items-center gap-3 text-gray-600">
+          <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+          <span>Loading products...</span>
+        </div>
+      </div>
+    }
+
+    <!-- Error State -->
+    @if (productService.error()) {
+      <div class="card p-6 bg-red-50 border-red-200">
+        <div class="flex items-center gap-3 text-red-700">
+          <i class="fa-solid fa-circle-exclamation fa-lg"></i>
+          <div>
+            <p class="font-semibold">Error loading products</p>
+            <p class="text-sm">{{ productService.error() }}</p>
+          </div>
+        </div>
+        <button (click)="loadProducts()" class="btn btn-sm mt-4">
+          <i class="fa-solid fa-rotate"></i> Try Again
+        </button>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @if (!productService.loading() && !productService.error() && !productService.hasProducts()) {
+      <div class="card p-12 text-center">
+        <div class="text-gray-400 mb-4">
+          <i class="fa-solid fa-box-open fa-4x"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-700">No products available</h3>
+        <p class="text-gray-500 mt-2">
+          @if (selectedCategory) {
+            No products found in "{{ selectedCategory }}". Try a different category.
+          } @else {
+            Check back later for new products!
+          }
+        </p>
+        @if (selectedCategory) {
+          <button (click)="clearFilter()" class="btn btn-primary mt-4">
+            View All Products
+          </button>
+        }
+      </div>
+    }
+
+    <!-- Product Grid -->
+    @if (!productService.loading() && productService.hasProducts()) {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        @for (product of productService.products(); track product.id) {
+          <div class="card overflow-hidden hover:shadow-lg transition-shadow">
+            <!-- Product Image Placeholder -->
+            <div class="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+              <i class="fa-solid fa-shirt fa-3x text-gray-400"></i>
+            </div>
+
+            <!-- Product Info -->
+            <div class="p-4 space-y-3">
+              <!-- Title & Brand -->
+              <div>
+                <h3 class="font-semibold text-gray-900 truncate">{{ product.title }}</h3>
+                @if (product.brand) {
+                  <p class="text-sm text-gray-500">{{ product.brand }}</p>
+                }
+              </div>
+
+              <!-- Category & Condition Tags -->
+              <div class="flex flex-wrap gap-2">
+                <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">
+                  {{ product.category }}
+                </span>
+                <span class="px-2 py-1 text-xs rounded-full" [class]="getConditionClass(product.condition)">
+                  {{ getConditionLabel(product.condition) }}
+                </span>
+              </div>
+
+              <!-- Price -->
+              <div class="flex items-baseline gap-2">
+                <span class="text-xl font-bold text-gray-900">
+                  R{{ product.resalePrice | number:'1.2-2' }}
+                </span>
+                <span class="text-sm text-gray-500">{{ product.currency }}</span>
+              </div>
+
+              <!-- Stock Info -->
+              <div class="text-sm text-gray-600">
+                @if (product.quantity > 5) {
+                  <span class="text-green-600">
+                    <i class="fa-solid fa-check-circle"></i> In Stock
+                  </span>
+                } @else if (product.quantity > 0) {
+                  <span class="text-orange-600">
+                    <i class="fa-solid fa-exclamation-circle"></i> Only {{ product.quantity }} left
+                  </span>
+                }
+              </div>
+
+              <!-- Buy Button -->
+              <button
+                (click)="buyProduct(product)"
+                class="btn btn-primary w-full"
+                [disabled]="product.quantity === 0 || isPurchasing(product.id)"
+              >
+                @if (isPurchasing(product.id)) {
+                  <i class="fa-solid fa-spinner fa-spin"></i>
+                  Processing...
+                } @else {
+                  <i class="fa-solid fa-shopping-cart"></i>
+                  Buy Now
+                }
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </main>
+</div>

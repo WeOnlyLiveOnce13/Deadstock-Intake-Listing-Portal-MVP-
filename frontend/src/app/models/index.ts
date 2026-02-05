@@ -87,3 +87,66 @@ export const CONDITIONS = [
 ] as const;
 
 export const CURRENCIES = ['ZAR', 'USD', 'EUR', 'GBP', 'KES', 'NGN'] as const;
+
+export interface Product {
+  id: string;
+  title: string;
+  brand: string | null;
+  category: string;
+  condition: 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR';
+  resalePrice: number;
+  currency: string;
+  quantity: number;
+  status: 'LISTED';  
+  createdAt: string;
+}
+
+export interface ProductDetail extends Product {
+  originalPrice: number;
+  updatedAt: string;
+}
+
+// =====================
+// ORDER INTERFACES
+// =====================
+
+export type OrderStatus = 
+  | 'PENDING'
+  | 'INVENTORY_RESERVED'
+  | 'PAYMENT_PENDING'
+  | 'PAYMENT_AUTHORIZED'
+  | 'CONFIRMED'
+  | 'FULFILLED'
+  | 'CANCELLED';
+
+export interface OrderItem {
+  id: string;
+  productId: string;
+  productTitle: string;
+  productBrand: string | null;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  buyerId: string;
+  subtotal: number;
+  discountCode: string | null;
+  discountAmount: number;
+  total: number;
+  status: OrderStatus;
+  paymentAuthId: string | null;
+  fulfilledAt: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  items: OrderItem[];
+}
+
+export interface CreateOrderRequest {
+  items: Array<{ productId: string; quantity: number }>;
+  discountCode?: string;
+}

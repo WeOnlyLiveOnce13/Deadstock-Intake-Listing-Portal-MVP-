@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // ============================================
@@ -21,6 +21,7 @@ model User {
 
   // Relations
   inventory InventoryItem[]
+  orders    Order[]
 }
 
 // ============================================
@@ -51,6 +52,7 @@ model InventoryItem {
   // Relations
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
 
   // Constraints: unique (userId, merchantId, sku)
   @@unique([userId, merchantId, sku])
@@ -73,4 +75,79 @@ enum ItemStatus {
   DRAFT // Just created, not priced
   PRICED // Has resale price
   LISTED // Published to marketplace
+}
+
+
+model Order {
+  id          String      @id @default(uuid())
+  orderNumber String      @unique // Human-readable: ORD-20260201143000001
+
+  // Buyer reference
+  buyerId String
+  buyer   User   @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+
+  // Pricing snapshot (frozen at order time)
+  subtotal       Float
+  discountCode   String?
+  discountAmount Float   @default(0)
+  total          Float
+  currency       String  @default("ZAR")
+
+  // Status tracking
+  status        OrderStatus @default(PENDING)
+  statusHistory Json        @default("[]") // [{status, timestamp, note}]
+
+  // Payment info (mocked)
+  paymentAuthId String?
+  paymentMethod String?
+
+  // Fulfillment tracking
+  fulfilledAt        DateTime?
+  cancelledAt        DateTime?
+  cancellationReason String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  items OrderItem[]
+
+  @@index([buyerId])
+  @@index([status])
+}
+
+// ============================================
+// ORDER ITEM - Individual items in an order
+// ============================================
+model OrderItem {
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Product reference
+  productId String
+  product   InventoryItem @relation(fields: [productId], references: [id])
+
+  // Snapshot at order time (prices can change later, so we freeze them)
+  productTitle String
+  productBrand String?
+  unitPrice    Float // resalePrice at order time
+  quantity     Int
+  lineTotal    Float // unitPrice × quantity
+
+  @@index([orderId])
+}
+
+// ============================================
+// ORDER STATUS ENUM
+// ============================================
+enum OrderStatus {
+  PENDING             // Step 1: Order just created
+  INVENTORY_RESERVED  // Step 2: Stock reserved
+  PAYMENT_PENDING     // Step 3: Price validated, awaiting payment
+  PAYMENT_AUTHORIZED  // Step 4: Payment approved
+  CONFIRMED           // Step 5: Order confirmed
+  FULFILLED           // Step 6-7: Inventory deducted & ready for delivery
+  CANCELLED           // Order cancelled at any step
 }
