@@ -4,9 +4,11 @@ A full-stack application for fashion brands to manage deadstock inventory. Uploa
 
 ## Tech Stack
 
-- **Backend**: NestJS 11, Prisma 7, SQLite, JWT Authentication
+- **Backend**: NestJS 11, Prisma 7 (PostgreSQL adapter), JWT Authentication
 - **Frontend**: Angular 19, Tailwind CSS v4, Font Awesome Icons
+- **Database**: PostgreSQL (production), Docker Compose for local development
 - **Validation**: Zod schemas for both API and CSV parsing
+- **Deployment**: Railway (containerized deployment)
 
 ## Quick Start
 
@@ -58,10 +60,12 @@ npx prisma migrate dev --name init
 
 Create `backend/.env`:
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://muna_user:muna_password_local_dev@localhost:5432/muna_africa"
 JWT_SECRET="your-secret-key-change-in-production"
 CORS_ORIGINS="http://localhost:4200"
 ```
+
+> **Note**: For local development with Docker, the DATABASE_URL is set in `docker-compose.yml`. The above is for manual setup only.
 
 #### 4. Run the Application
 
@@ -85,7 +89,7 @@ npm run dev
 
 **Test Credentials** (after signup):
 - Email: `test@example.com`
-- Password: `password123`
+- Password: `Password123`
 
 ### Uploading Inventory
 
@@ -227,16 +231,24 @@ docker build -t pcrd-backend ./backend && docker run --rm pcrd-backend npm test
 │              Frontend Container                      │
 │                (nginx:alpine)                        │
 │    • Serves Angular static files                    │
-│    • Proxies /api/* → backend:3000                  │
+│    • Direct API calls to backend                    │
 │    Port: 4200 → 80                                  │
 └─────────────────────┬───────────────────────────────┘
-                      │ /api/*
+                      │
 ┌─────────────────────▼───────────────────────────────┐
 │               Backend Container                      │
 │                (node:20-slim)                        │
 │    • NestJS API server                              │
-│    • Prisma + SQLite database                       │
+│    • Prisma with @prisma/adapter-pg                 │
 │    Port: 3000 → 3000                                │
+└─────────────────────┬───────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────┐
+│            PostgreSQL Container                      │
+│              (postgres:16-alpine)                    │
+│    • Production-grade RDBMS                         │
+│    • Volume: muna-postgres-data                     │
+│    Port: 5432 → 5432                                │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -299,10 +311,11 @@ docker-compose run --rm backend npm test
 
 ### Data Persistence
 
-SQLite database is stored in a Docker volume:
-- Volume name: `muna-africa-data`
-- Persists between restarts
+PostgreSQL database is stored in a Docker volume:
+- Volume name: `muna-postgres-data`
+- Persists between container restarts
 - To reset: `docker-compose down -v`
+- Data survives `docker-compose down` but NOT `docker-compose down -v`
 
 ### Troubleshooting Docker
 
@@ -316,11 +329,14 @@ SQLite database is stored in a Docker volume:
 
 ### Production Deployment
 
-For production, you would:
-1. Use environment variables for secrets
-2. Add HTTPS with a reverse proxy (Traefik/Caddy)
-3. Use PostgreSQL instead of SQLite
-4. Add health checks and restart policies
+This application is deployed on Railway with:
+1. PostgreSQL database (managed service)
+2. Separate backend and frontend services
+3. Environment variables for secrets
+4. HTTPS provided by Railway
+5. Automatic deployments from GitHub
+
+See the live demo above for the production instance.
 
 ## Key Assumptions & Tradeoffs
 
@@ -328,14 +344,15 @@ For production, you would:
 1. **Single currency per item**: Each item has its own currency; no conversion is performed
 2. **Unique constraint**: merchant_id + sku must be unique per user
 3. **Pricing is one-way**: Once priced, items cannot revert to DRAFT
-4. **SQLite for simplicity**: Easy setup, no external database required
+4. **PostgreSQL with Prisma 7**: Uses driver adapters for connection pooling and production reliability
 
 ### Tradeoffs
-1. **JWT in localStorage**: Simple but less secure than httpOnly cookies. Acceptable for internal tools.
+1. **JWT in localStorage**: Simple but less secure than httpOnly cookies. Acceptable for internal tools; production would use httpOnly cookies.
 2. **No pagination**: All items loaded at once. Works for hundreds of items; would need pagination for thousands.
-3. **Synchronous pricing**: Auto-price is instant. For complex pricing like Machine-learning based, would need async job queue.
+3. **Synchronous pricing**: Auto-price is instant. For complex pricing like ML-based, would need async job queue.
 4. **No image upload**: Focus on data workflow. Images could be added as URLs or file uploads.
-5. **SQLite vs PostgreSQL**: Chose SQLite for zero-config setup. Production would use PostgreSQL.
+5. **Driver adapters overhead**: Prisma 7 requires @prisma/adapter-pg for PostgreSQL. Adds dependency but enables connection pooling and better error handling.
+6. **Railway deployment costs**: Free tier has limits. Production usage may require paid plan for sustained traffic and database size.
 
 ### Future Enhancements
 - XLSX support (currently CSV only)
